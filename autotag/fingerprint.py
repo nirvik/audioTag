@@ -44,8 +44,6 @@ class ParserResult(object):
                     mbids.append(recording['id'])
                 self.mbids[result['id']] = mbids
         
-    def __repr__(self):
-        print ' ParsedResult of the acoustid file'
 
 
 if __name__ == '__main__':    
@@ -54,7 +52,7 @@ if __name__ == '__main__':
     json_acoustid_result  =  acoustid.lookup('S0xa1BKE',finger.fingerprint,finger.duration)
     #Parsing
     #Collect all the acoustids and the respective scores ... collect all the recording mbids
-
+    print json_acoustid_result
     parsed_output = ParserResult(json_acoustid_result)
     print parsed_output.mbids,parsed_output.score,parsed_output.acoustids
     
