@@ -34,13 +34,12 @@ class FingerPrinter(object):
             score.find('=') + 1:], length[length.find('=') + 1:]
 
 
-class ParserResult(object):
-
-    def __init__(self, json_file):
+    def parse_result(self, json_file):
         self.mbids = {}
         self.acoustids = []
         self.score = {}
 
+        acoustid.lookup('S0xa1BKE', self.fingerprint, self.duration)
         for result in json_file['results']:
             self.acoustids.append(result['id'])
             self.score[result['id']] = result['score']
@@ -54,14 +53,8 @@ class ParserResult(object):
 if __name__ == '__main__':
     FILE = sys.argv[1]
     finger = FingerPrinter(FILE)
-    json_acoustid_result = acoustid.lookup(
-        'S0xa1BKE', finger.fingerprint, finger.duration)
-    # Parsing
-    # Collect all the acoustids and the respective scores ... collect all the
-    # recording mbids
-    print json_acoustid_result
-    parsed_output = ParserResult(json_acoustid_result)
-    print parsed_output.mbids, parsed_output.score, parsed_output.acoustids
+    parsed_output = finger.parse_result()
+    
 
 '''
 Get the fingerprint 
