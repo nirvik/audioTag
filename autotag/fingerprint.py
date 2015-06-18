@@ -41,14 +41,11 @@ class FingerPrinter(object):
     def parse_result(self):
 
         json_file = acoustid.lookup('S0xa1BKE', self.fingerprint, self.duration)
-	print json_file
 	for result in json_file['results']:
             self.acoustids.append(result['id'])
             self.scores[result['id']] = result['score']
 	   
             if 'recordings' in result:
-		if 'release' in result['recordings']:
-		    print 'yes'
                 mbids = []
 		artists = []
                 for recording in result['recordings']:
