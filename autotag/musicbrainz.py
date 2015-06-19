@@ -1,7 +1,7 @@
 import musicbrainzngs
 import fingerprint
 
-musicbrainzngs.auth('nirvik1993','INDR@ni9')  # username  , password
+musicbrainzngs.auth('','')  # username  , password
 musicbrainzngs.set_useragent('Auto Tagger', '0.1', 'nirvik1993@gmail.com')
 
 
