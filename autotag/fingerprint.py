@@ -51,9 +51,9 @@ class FingerPrinter(object):
                 for recording in result['recordings']:
                     mbids.append(recording['id'])
                     for person in recording['artists']:
-                        artists.append((person['name'],person['id']))
+                        artists.append(person['name'])
                 self.mbids[result['id']] = mbids
-                self.artists[result['id']] = artists
+                self.artists[result['id']] = set(artists)
 
 
 if __name__ == '__main__':

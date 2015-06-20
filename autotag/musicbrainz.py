@@ -1,7 +1,7 @@
 import musicbrainzngs
 import fingerprint
 
-musicbrainzngs.auth('nirvik1993','INDR@ni9')  # username  , password
+musicbrainzngs.auth('','')  # username  , password
 musicbrainzngs.set_useragent('Auto Tagger', '0.1', 'nirvik1993@gmail.com')
 
 
@@ -31,7 +31,6 @@ def get_recording_by_id(release_id):
     for ids in release_id:
         temp_mbids = [] 
         try:
-            #result.append(musicbrainzngs.get_recording_by_id(ids,includes=["releases"]))
 	    records = musicbrainzngs.get_recording_by_id(ids,includes=['releases'])['recording']
 	    for i in records['release-list']:
 		try:
@@ -44,13 +43,8 @@ def get_recording_by_id(release_id):
     	except musicbrainzngs.WebServiceError as exc:
             print("Something went wrong with the request: %s" % exc)
 	    raise fingerprint.FingerPrinterException('Something wrong with the request. ',2)
+    #print song_details
     return (mbids,song_details) 
-
-    
-
 
 def get_album_art(release_id):
     result = get_recording_by_id(release_id)
-     
-
-
