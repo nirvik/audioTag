@@ -23,27 +23,26 @@ def show_release_details(rel):
 	print("MusicBrainz ID: {}".format(rel['id']))
 
 
-def get_recording_by_id(release_id):
+def get_recording_by_id(recording_ids):
     
     # We need to store more information . As of now , storing only release id to get the album art in future 
     mbids = {} 
     song_details = {} 
-    for ids in release_id:
-        temp_mbids = [] 
+    for rid in recording_ids:
+        release_ids = [] 
         try:
-	    records = musicbrainzngs.get_recording_by_id(ids,includes=['releases'])['recording']
-	    for i in records['release-list']:
+	    data  = musicbrainzngs.get_recording_by_id(rid,includes=['releases'])['recording']
+	    for i in data['release-list']:
 		try:
                     if i['status'] == 'Official':
-                        temp_mbids.append(i['id'])
-                    mbids[ids] = temp_mbids
+                        release_ids.append(i['id'])
 		except:
 		    pass
-  	    song_details[ids] = records['release-list']
+            mbids[rid] = release_ids  # we use these release ids to get the album art 
+  	    song_details[rid] = data['release-list']
     	except musicbrainzngs.WebServiceError as exc:
             print("Something went wrong with the request: %s" % exc)
-	    raise fingerprint.FingerPrinterException('Something wrong with the request. ',2)
-    #print song_details
+	    raise fingerprint.FingerPrinterException('Something wrong with the request. ',3)
     return (mbids,song_details) 
 
 def get_album_art(release_id):

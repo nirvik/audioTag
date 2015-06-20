@@ -20,7 +20,7 @@ class FingerPrinter(object):
     def __init__(self, file_name):
         self.fingerprint = None
         self.duration = None
-        self.mbids = {}
+        self.recording_ids = {}
         self.acoustids = []
         self.scores = {}
 	self.artists = {} 
@@ -46,13 +46,13 @@ class FingerPrinter(object):
             self.scores[result['id']] = result['score']
 	   
             if 'recordings' in result:
-                mbids = []
+                rids = [] # Recording Ids 
 		artists = []
                 for recording in result['recordings']:
-                    mbids.append(recording['id'])
+                    rids.append(recording['id'])
                     for person in recording['artists']:
                         artists.append(person['name'])
-                self.mbids[result['id']] = mbids
+                self.recording_ids[result['id']] = rids
                 self.artists[result['id']] = set(artists)
 
 
@@ -60,10 +60,10 @@ if __name__ == '__main__':
     FILE = sys.argv[1]
     finger = FingerPrinter(FILE)
     finger.parse_result()
-    print finger.mbids.keys()#,finger.acoustids,finger.score
+    print finger.recording_ids.keys()#,finger.acoustids,finger.score
     print finger.scores
     print finger.artists
-    for i in finger.mbids.items():
+    for i in finger.recording_ids.items():
         print i
 
 '''

@@ -10,14 +10,13 @@ if __name__ == '__main__':
     finger = fingerprint.FingerPrinter(FILE)
     finger.parse_result()
     print finger.scores
-    best_mbids = max(finger.scores.iteritems(), key = operator.itemgetter(1))
-    result = musicbrainz.get_recording_by_id(finger.mbids[best_mbids[0]])
-    mbid_rec = result[1] 
-    print result[1]
+    best_acoustid,score = max(finger.scores.iteritems(), key = operator.itemgetter(1)) # get the acoustid that has the maximum score 
+    mbids,details = musicbrainz.get_recording_by_id(finger.recording_ids[best_acoustid])
+    mbid_rec = details
     mbid_dates = {} 
     temp = {} 
-    for i,k in result[1].iteritems():
-        for j in k:
+    for key,value in details.iteritems():
+        for j in value:
 #	    print j['id'] , j['date']
 	    #print j
 	    try:
@@ -25,18 +24,18 @@ if __name__ == '__main__':
 	    except:
 		pass
 	    temp[j['id']] = i
-    coverart_mbid = max(mbid_dates.iteritems(),key=operator.itemgetter(1))
-    print 'The cover art mbid is {0}'.format(coverart_mbid[0])
-    #print 'The details of the songs are follows {0}'.format(mbid_rec[temp[coverart_mbid[0]]])
+    coverart_mbid,date = max(mbid_dates.iteritems(),key=operator.itemgetter(1))
+    print 'The cover art mbid is {0}'.format(coverart_mbid)
+    print 'This was released in {0}'.format(date)
 	
-    for artist in finger.artists[best_mbids[0]]:
+    for artist in finger.artists[best_acoustid]:
 	print 'Artist: {0}'.format(artist)
     
     key = ''
-    for i,j in result[0].iteritems():
+    for i,j in mbids.iteritems():
     	for k in j:
-	    if coverart_mbid[0] in j:
+	    if coverart_mbid in j:
 	    	key = i
 		break
     #print key
-    print 'Title {0}'.format(result[1][key][0]['title'])
+    print 'Title {0}'.format(details[key][0]['title'])
