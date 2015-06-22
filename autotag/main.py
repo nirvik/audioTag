@@ -17,25 +17,25 @@ if __name__ == '__main__':
     temp = {} 
     for key,value in details.iteritems():
         for j in value:
-#	    print j['id'] , j['date']
-	    #print j
 	    try:
 	        mbid_dates[j['id']] = datetime.strptime(j['date'],'%Y-%M-%d')
 	    except:
+		try:
+		    mbid_dates[j['id']] = datetime.strptime(j['date'],'%Y-%M')
+		except:
+		    pass
 		pass
-	    temp[j['id']] = i
+	    temp[j['id']] = key
     coverart_mbid,date = max(mbid_dates.iteritems(),key=operator.itemgetter(1))
     print 'The cover art mbid is {0}'.format(coverart_mbid)
     print 'This was released in {0}'.format(date)
 	
     for artist in finger.artists[best_acoustid]:
 	print 'Artist: {0}'.format(artist)
-    
     key = ''
     for i,j in mbids.iteritems():
     	for k in j:
 	    if coverart_mbid in j:
 	    	key = i
 		break
-    #print key
     print 'Title {0}'.format(details[key][0]['title'])
