@@ -24,9 +24,9 @@ def tagit(FILE,metadata):
     audiofile['title'] = metadata['title'] 
     audiofile['originaldate']  = metadata['date']
     audiofile.save()
-    audiofile = MP3(FILE,ID3 = ID3)
+    audio = MP3(FILE,ID3 = ID3)
     location,header = get_album_art(metadata['album-art-mbid'])
-    audiofile.tags.add(
+    audio.tags.add(
         APIC(
             encoding = 3,
             mime = header['content-type'],
@@ -35,7 +35,7 @@ def tagit(FILE,metadata):
             data = open(location).read()
             )
     )
-    audiofile.save()
+    audio.save()
     #imagedata = open(albumart,'rb').read()
     #audiofile.tag.images.set(3,imagedata,"image/jpeg","Tagged with autotagger")
     #audiofile.tag.save()
