@@ -4,10 +4,12 @@ import sys
 import musicbrainz
 import operator
 from datetime import datetime
+import tag
 if __name__ == '__main__':
     
     FILES = sys.argv[1:]
     for FILE in FILES:
+	metadata = {} 
     	finger = fingerprint.FingerPrinter(FILE)
     	finger.parse_result()
     	print finger.scores
@@ -35,14 +37,23 @@ if __name__ == '__main__':
     	print 'This was released in {0}'.format(date)
 	artist = ','.join(finger.artists[best_acoustid])
 	print 'Artist: {0}'.format(artist)
-    	#for artist in finger.artists[best_acoustid]:
-	#    print 'Artist: {0}'.format(artist)
+	song = '' 
     	for song_name in finger.song[best_acoustid]:
 	    print 'Song: {0}'.format(song_name.encode('utf-8'))
+	    try:
+	        song = song + song_name.encode('utf-8') + ' '
+    	    except:
+		pass
+	# Get the best cover art 
     	key = ''
-    	for i,j in mbids.iteritems():
+	for i,j in mbids.iteritems():
     	    for k in j:
 	    	if coverart_mbid in j:
 	    	    key = i
 		    break
-    	print 'Title :{0}'.format(details[key][0]['title'])
+    	print 'Album :{0}'.format(details[key][0]['title'])
+	metadata['title'] = unicode(song)
+	metadata['album'] = unicode(details[key][0]['title'])
+	metadata['artist'] = unicode(artist)
+	metadata['date'] = unicode(date)
+	tag.tagit(FILE , metadata)
