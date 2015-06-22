@@ -56,4 +56,5 @@ if __name__ == '__main__':
 	metadata['album'] = unicode(details[key][0]['title'])
 	metadata['artist'] = unicode(artist)
 	metadata['date'] = unicode(date)
-	#tag.tagit(FILE , metadata)
+	metadata['album-art-mbid'] = unicode(coverart_mbid) 
+	tag.tagit(FILE , metadata)
