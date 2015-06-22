@@ -60,6 +60,7 @@ class FingerPrinter(object):
 		self.song[result['id']] = set(song_name)
 
 
+
 if __name__ == '__main__':
     FILE = sys.argv[1]
     finger = FingerPrinter(FILE)
@@ -67,6 +68,7 @@ if __name__ == '__main__':
     print finger.recording_ids.keys()#,finger.acoustids,finger.score
     print finger.scores
     print finger.artists
+    print finger.song
     for i in finger.recording_ids.items():
         print i
 

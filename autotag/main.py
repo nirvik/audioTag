@@ -33,15 +33,16 @@ if __name__ == '__main__':
     	coverart_mbid,date = max(mbid_dates.iteritems(),key=operator.itemgetter(1))
     	print 'The cover art mbid is {0}'.format(coverart_mbid)
     	print 'This was released in {0}'.format(date)
-	
-    	for artist in finger.artists[best_acoustid]:
-	    print 'Artist: {0}'.format(artist)
+	artist = ','.join(finger.artists[best_acoustid])
+	print 'Artist: {0}'.format(artist)
+    	#for artist in finger.artists[best_acoustid]:
+	#    print 'Artist: {0}'.format(artist)
     	for song_name in finger.song[best_acoustid]:
-	    print 'Song: {0}'.format(song_name)
+	    print 'Song: {0}'.format(song_name.encode('utf-8'))
     	key = ''
     	for i,j in mbids.iteritems():
     	    for k in j:
 	    	if coverart_mbid in j:
 	    	    key = i
 		    break
-    	print 'Title {0}'.format(details[key][0]['title'])
+    	print 'Title :{0}'.format(details[key][0]['title'])
