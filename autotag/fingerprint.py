@@ -24,6 +24,7 @@ class FingerPrinter(object):
         self.acoustids = []
         self.scores = {}
 	self.artists = {} 
+	self.song = {} 
         try:
             fpprocess = subprocess.Popen(
                 ['fpcalc', file_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -48,12 +49,15 @@ class FingerPrinter(object):
             if 'recordings' in result:
                 rids = [] # Recording Ids 
 		artists = []
+		song_name = [] 
                 for recording in result['recordings']:
                     rids.append(recording['id'])
+		    song_name.append(recording['title'])
                     for person in recording['artists']:
                         artists.append(person['name'])
                 self.recording_ids[result['id']] = rids
                 self.artists[result['id']] = set(artists)
+		self.song[result['id']] = set(song_name)
 
 
 if __name__ == '__main__':
