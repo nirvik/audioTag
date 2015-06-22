@@ -3,7 +3,7 @@ from mutagen.easyid3 import EasyID3
 from BeautifulSoup import BeautifulSoup
 import urllib
 from mutagen.mp3 import MP3
-
+from mutagen import File
 
 def get_album_art(mbid):
     cover_art_html = urllib.urlopen('https://musicbrainz.org/release/'+mbid).read()
@@ -23,13 +23,23 @@ def get_album_art(mbid):
     print ' Image located in {0} and downloaded {1} '.format(location,header['content-length'])
     return (location , header) 
 
-def tagit(FILE,metadata):
-    audio = MP3(FILE,ID3 = ID3)
+
+
+def tagit(FILE,metadata):    
+    audio = MP3(FILE)
     try:
 	audio.delete()
         audio.add_tags()
-    except error:
-        pass
+    except :
+	print 'Too bad nothing will happen'
+        try:
+            audio = MP3(FILE)
+	    audio.delete()
+	    audio.add_tags()
+	    print 'finally yeah '
+	except:
+	    print 'Now definitely it wont happen'
+	    pass
     location,header = get_album_art(metadata['album-art-mbid'])
     if header['content-type'] ==  'image/jpg':
 	header['content-type'] = 'image/jpeg'
@@ -44,16 +54,15 @@ def tagit(FILE,metadata):
                 )
         )
         audio.save()
-
+	print 'Image added'
     try:
         audiofile = EasyID3(FILE)
     except ID3NoHeaderError:
-        audiofile = mutagen.File(FILE,easy = True)
+        audiofile = File(FILE,easy = True)
         audiofile.add_tags()
 
     audiofile['artist'] = metadata['artist']
     audiofile['album'] = metadata['album']
     audiofile['title'] = metadata['title'] 
     audiofile['originaldate']  = metadata['date']
-    
     audiofile.save()
