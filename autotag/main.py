@@ -1,20 +1,35 @@
-import musicbrainzngs 
-import fingerprint 
+import musicbrainzngs
+from  fingerprint import * 
 import sys
 import musicbrainz
 import operator
 from datetime import datetime
 import tag
-if __name__ == '__main__':
-    
-    FILES = sys.argv[1:]
+import random
+import os 
+
+if __name__=='__main__': 
+    FILES=sys.argv[1:]
+    #base = '/home/nirvik/Music/'
+    #FILES = map(lambda x: base + str(x) , os.listdir(base))
     for FILE in FILES:
+	print 'Trying out {0}'.format(FILE)
 	metadata = {} 
-    	finger = fingerprint.FingerPrinter(FILE)
-    	finger.parse_result()
-    	print finger.scores
-    	best_acoustid,score = max(finger.scores.iteritems(), key = operator.itemgetter(1)) # get the acoustid that has the maximum score 
-   	mbids,details = musicbrainz.get_recording_by_id(finger.recording_ids[best_acoustid])
+        try:
+    	    finger = FingerPrinter(FILE)
+            query = AcoustQuery(finger.fingerprint , finger.duration)
+            query.parse_result()
+	except : 
+	    print ' Invalid Song '
+	    continue
+
+    	best_acoustid,score = query.bestacoustid() # get the acoustid that has the maximum score
+
+   	try:
+	    mbids,details = musicbrainz.get_recording_by_id(query.recording_ids[best_acoustid])
+	except:
+            print 'seriously ! this shit happend '
+	    continue
     	mbid_rec = details
     	mbid_dates = {} 
     	temp = {} 
@@ -29,33 +44,42 @@ if __name__ == '__main__':
 			try:
 		    	    mbid_dates[j['id']] = datetime.strptime(j['date'],'%Y')
 			except:
-			    pass	
-		pass
+       		            pass
 	    	temp[j['id']] = key
 
-    	coverart_mbid,date = max(mbid_dates.iteritems(),key=operator.itemgetter(1))
+        # Let's say if date is not there 
+	try:
+    	    coverart_mbid,date = max(mbid_dates.iteritems(),key=operator.itemgetter(1)) # Get the latest cover track 
+	except:
+	    coverart_mbid = random.choice(temp.keys())
+	    date = '2015'
+            
     	print 'The cover art mbid is {0}'.format(coverart_mbid)
     	print 'This was released in {0}'.format(date)
-	artist = ','.join(finger.artists[best_acoustid])
-	print 'Artist: {0}'.format(artist.encode('utf-8'))
-	song = '' 
-    	for song_name in finger.song[best_acoustid]:
-	    print 'Song: {0}'.format(song_name.encode('utf-8'))
-	    try:
-	        song = song + song_name.encode('utf-8') + ' '
-    	    except:
-		pass
-	# Get the best cover art 
-    	key = ''
+
+        artist = query.artist
+	song = query.song_title
+	
+    	print 'Song : {0}'.format(song)
+        print 'Artist: {0}'.format(artist)
+	
+	key = ''
 	for i,j in mbids.iteritems():
     	    for k in j:
 	    	if coverart_mbid in j:
 	    	    key = i
 		    break
-    	print 'Album :{0}'.format(details[key][0]['title'].encode('utf-8'))
-	metadata['title'] = unicode(song.decode('utf-8'))
-	metadata['album'] = unicode(details[key][0]['title'])
+    	
+	metadata['title'] = unicode(song)
+	try:
+	    metadata['album'] = unicode(details[key][0]['title'])
+	except:
+	    metadata['album']= unicode(song)
 	metadata['artist'] = unicode(artist)
 	metadata['date'] = unicode(date)
 	metadata['album-art-mbid'] = unicode(coverart_mbid) 
-	tag.tagit(FILE , metadata)
+	try:
+	    #tag.tagit(FILE , metadata)
+	    tag.trialtag(FILE , metadata)
+	except:
+	    pass
