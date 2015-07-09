@@ -37,7 +37,7 @@ class MusicUtils(object):
         self.artist = None
         self.album = None
         self.date = None
-	# We dont want this to have public access
+        # We dont want this to have public access
         self._scores = {}
         self._recording_ids = {}
 
@@ -168,7 +168,6 @@ class MusicUtils(object):
         cover_art_json = requests.get(MusicUtils.imageurl+art_mbid).text
         try:
             response = json.loads(cover_art_json)
-            print response
         except:
             location , header = '' , {'content-type':'failed','content-length':0}
             return (location , header )
@@ -195,11 +194,11 @@ class MusicUtils(object):
 
 
     def parse_result(self):
-	'''
-	Makes a request to acoustid web service
-	Parses the response
-	Aggregates the necessary scores , recording ids , mbids , artist and song title
-	'''
+        '''
+        Makes a request to acoustid web service
+        Parses the response
+        Aggregates the necessary scores , recording ids , mbids , artist and song title
+        '''
         acoustids = []
         json_file = acoustid.lookup(MusicUtils.API_KEY , self._fingerprint , self.duration)
         temp_song  = {}
@@ -261,5 +260,5 @@ if __name__ == '__main__':
     metadata['album-art-mbid'] = unicode(coverart_mbid)
     metadata['album'] = query.album
     metadata['duration'] = query.duration
-    #trialtag(music,metadata)
+    trialtag(music,metadata)
     print ' Artist :{0} \n Album  :{1} \n Song   :{2} \n Date   :{3} \n Duration:{4} \n mbid   :{5}'.format(query.artist,query.album,query.song_title,query.date,query.duration,query.mbid)
