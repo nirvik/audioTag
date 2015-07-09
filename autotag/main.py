@@ -1,33 +1,33 @@
 #import musicbrainzngs
-from  fingerprint import * 
+from  fingerprint import *
 import sys
 from  musicbrainz import MusicUtils
 import operator
 from datetime import datetime
 import tag
 import random
-import os 
+import os
 
-if __name__=='__main__': 
+if __name__=='__main__':
     FILES=sys.argv[1:]
     #base = '/home/nirvik/Music/'
     #FILES = map(lambda x: base + str(x) , os.listdir(base))
     for FILE in FILES:
 	print 'Trying out {0}'.format(FILE)
-	metadata = {} 
-        try:
-    	    finger = FingerPrinter(FILE)
-	    query = MusicUtils.feedfingerprint(finger.fingerprint,finger.duration)
-            query.parse_result()
-	except : 
-	    print ' Invalid Song '
-	    continue
-    	best_acoustid,score = query.bestacoustid() # gets the acoustid that has the maximum score
-   	try:
-	    mbids,details = query.recording_details(query.recording_ids[best_acoustid])
+	metadata = {}
+    try:
+        finger = FingerPrinter(FILE)
+        query = MusicUtils.feedfingerprint(finger.fingerprint,finger.duration)
+        query.parse_result()
+	except :
+        print ' Invalid Song '
+        continue
+        best_acoustid,score = query.bestacoustid() # gets the acoustid that has the maximum score
+    try:
+        mbids,details = query.recording_details(query.recording_ids[best_acoustid])
 	except:
-            print 'Something unusual happened ...'
-	    continue
+        print 'Something unusual happened ...'
+        continue
 
 	coverart_mbid , date = query.latestmbid(details)
 	artist = query.artist
