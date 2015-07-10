@@ -7,7 +7,7 @@ import operator
 import requests
 import urllib
 import json
-
+from BeautifulSoup import BeautifulSoup
 class MusicUtilsException(Exception):
     def __init__(self,code,msg):
         self.msg = msg
@@ -21,6 +21,7 @@ class MusicUtils(object):
     __doc__ = 'A bunch of utilities provided to extract information from the musicbrainzngs'
     __version__ = '0.0.1'
     imageurl = 'http://coverartarchive.org/release/'
+    musicbrainz_image_url = 'https://musicbrainz.org/release/{0}/cover-art'
     API_KEY = 'S0xa1BKE'
     musicbrainzngs.auth('','')  # username  , password
     musicbrainzngs.set_useragent('Auto Tagger', '0.1', 'nirvik1993@gmail.com')
@@ -168,13 +169,19 @@ class MusicUtils(object):
         cover_art_json = requests.get(MusicUtils.imageurl+art_mbid).text
         try:
             response = json.loads(cover_art_json)
+            pic = response['images'][0]['image']
         except:
-            location , header = '' , {'content-type':'failed','content-length':0}
-            return (location , header )
+            try:
+                cover_art_response = requests.get(MusicUtils.musicbrainz_image_url.format(art_mbid)).text
+                soup=BeautifulSoup(cover_art_response)
+                pic = soup.find('div',{'class':'cover-art'}).find('img')['src'] #From amazon
+                print pic
+            except:
+                location , header = '' , {'content-type':'failed','content-length':0}
+                print '3'
+                return (location , header )
         try:
-            picture = response['images'][0]['image']
-            print picture
-            location , header = urllib.urlretrieve(picture,"filename.jpeg")
+            location , header = urllib.urlretrieve(pic,"filename.jpeg")
         except :
             print response
             print cover_art_json
@@ -203,6 +210,7 @@ class MusicUtils(object):
         json_file = acoustid.lookup(MusicUtils.API_KEY , self._fingerprint , self.duration)
         temp_song  = {}
         temp_artist = {}
+        print json_file
         if json_file['status'] != u'ok' or len(json_file['results'])==0:
             raise MusicUtilsException('2','Bad look up, ended with a bad status report')
         for result in json_file['results']:
