@@ -1,6 +1,7 @@
 import subprocess
 import sys
 
+
 class FingerPrinterException(Exception):
 
     def __init__(self, mesg, error_code):
@@ -9,7 +10,6 @@ class FingerPrinterException(Exception):
 
     def __str__(self):
         return '[Error {0}] => {1}'.format(self.code , self.mesg)
-
 
 class FingerPrinter(object):
 

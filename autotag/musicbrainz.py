@@ -1,6 +1,6 @@
 import acoustid
 import musicbrainzngs
-from  fingerprint import *
+from  fingerprint import FingerPrinter
 import datetime
 import random
 import operator
@@ -8,54 +8,7 @@ import requests
 import urllib
 import json
 from BeautifulSoup import BeautifulSoup
-
-
-def parse_result(json_file):
-    '''
-    Parses the response
-    Aggregates the necessary scores , recording ids , mbids , artist and song title
-    '''
-    temp_song  = {}
-    temp_artist = {}
-    scores = {}
-    recording_ids = {}
-    if json_file['status'] != u'ok' or len(json_file['results'])==0:
-        raise MusicUtilsException('2','Bad look up, ended with a bad status report')
-    for result in json_file['results']:
-        scores[result['id']] = result['score']
-        if 'recordings' in result:
-            rids = [] # Recording Ids
-            for recording in result['recordings']:
-                rids.append(recording['id'])
-        try:
-            if recording['title'] in temp_song:
-                temp_song[recording['title']] += 1
-            else:
-                temp_song[recording['title']] = 0
-        except:
-            pass
-        try:
-            name = ''
-            ok = False
-            for person in recording['artists']:
-                if 'joinphrase' in person:
-                    name +=  person['name'] +person['joinphrase']
-                    ok = True
-                    continue
-
-           #adding the last artist
-            if ok:
-                name = name + ' ' + person['name']
-            else:
-                name = person['name']
-            if name in temp_artist :
-                temp_artist[name] +=1
-            else:
-                temp_artist[name] = 0
-        except:
-            pass
-        recording_ids[result['id']] = rids
-    return (scores , recording_ids , temp_song , temp_artist)
+from tag import *
 
 
 class MusicUtilsException(Exception):
@@ -233,41 +186,6 @@ class MusicUtils(object):
 
 
     @staticmethod
-    def album_art(art_mbid):
-        '''
-            Takes MBID as the argument and downloads the image for the music
-        '''
-        cover_art_json = requests.get(MusicUtils.base_image_url+art_mbid).text
-        try:
-            response = json.loads(cover_art_json)
-            pic = response['images'][0]['image']
-        except:
-            try:
-                cover_art_response = requests.get(MusicUtils.musicbrainz_image_url.format(art_mbid)).text
-                soup=BeautifulSoup(cover_art_response)
-                pic = soup.find('div',{'class':'cover-art'}).find('img')['src'] #From amazon
-                print pic
-            except:
-                location , header = '' , {'content-type':'failed','content-length':0}
-                print '3'
-                return (location , header )
-        try:
-            location , header = urllib.urlretrieve(pic,"filename.jpeg")
-        except :
-            print response
-            print cover_art_json
-            print 'There is no album art for this file '
-            location = ''
-            header = {'content-type':'failed','content-length':0}
-        print ' Image located in {0} and downloaded {1} '.format(location,header['content-length'])
-        if header['content-type'] == 'image/jpg':
-            header['content-type'] = 'image/jpeg'
-        if header['content-type'] != 'failed':
-            return (location , header)
-        else :
-            raise MusicUtilsException('1','Image not found')
-
-    @staticmethod
     def bestacoustid(scores):
         return max(scores.iteritems(),key=operator.itemgetter(1))
 
@@ -298,7 +216,7 @@ class MusicUtils(object):
 
 if __name__ == '__main__':
     import sys
-    from tag import trialtag
+    from tag import *
     FILE = sys.argv[1]
     finger = FingerPrinter(FILE)
     music = MusicUtils.feedfingerprint(finger.fingerprint , finger.duration)
@@ -310,5 +228,6 @@ if __name__ == '__main__':
     metadata['album-art-mbid'] = unicode(query.mbid)
     metadata['album'] = query.album
     metadata['duration'] = query.duration
-    trialtag(FILE,metadata)
+    metadata['cover-art-url'] = query.cover_art_url
     print ' Artist :{0} \n Album  :{1} \n Song   :{2} \n Date   :{3} \n Duration:{4} \n mbid   :{5}'.format(query.artist,query.album,query.song_title,query.date,query.duration,query.mbid)
+    trialtag(FILE,metadata)
