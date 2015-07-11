@@ -8,6 +8,56 @@ import requests
 import urllib
 import json
 from BeautifulSoup import BeautifulSoup
+
+
+def parse_result(json_file):
+    '''
+    Parses the response
+    Aggregates the necessary scores , recording ids , mbids , artist and song title
+    '''
+    temp_song  = {}
+    temp_artist = {}
+    scores = {}
+    recording_ids = {}
+    if json_file['status'] != u'ok' or len(json_file['results'])==0:
+        raise MusicUtilsException('2','Bad look up, ended with a bad status report')
+    for result in json_file['results']:
+        scores[result['id']] = result['score']
+        if 'recordings' in result:
+            rids = [] # Recording Ids
+            for recording in result['recordings']:
+                rids.append(recording['id'])
+        try:
+            if recording['title'] in temp_song:
+                temp_song[recording['title']] += 1
+            else:
+                temp_song[recording['title']] = 0
+        except:
+            pass
+        try:
+            name = ''
+            ok = False
+            for person in recording['artists']:
+                if 'joinphrase' in person:
+                    name +=  person['name'] +person['joinphrase']
+                    ok = True
+                    continue
+
+           #adding the last artist
+            if ok:
+                name = name + ' ' + person['name']
+            else:
+                name = person['name']
+            if name in temp_artist :
+                temp_artist[name] +=1
+            else:
+                temp_artist[name] = 0
+        except:
+            pass
+        recording_ids[result['id']] = rids
+    return (scores , recording_ids , temp_song , temp_artist)
+
+
 class MusicUtilsException(Exception):
     def __init__(self,code,msg):
         self.msg = msg
@@ -20,27 +70,46 @@ class MusicUtils(object):
 
     __doc__ = 'A bunch of utilities provided to extract information from the musicbrainzngs'
     __version__ = '0.0.1'
-    imageurl = 'http://coverartarchive.org/release/'
+    base_image_url = 'http://coverartarchive.org/release/'
     musicbrainz_image_url = 'https://musicbrainz.org/release/{0}/cover-art'
     API_KEY = 'S0xa1BKE'
     musicbrainzngs.auth('','')  # username  , password
     musicbrainzngs.set_useragent('Auto Tagger', '0.1', 'nirvik1993@gmail.com')
 
-    def __init__(self , fingerprint = None , duration = None ):
-        self._mbid = None # The MBID
-        self._mbid_dates = {} # mbid to release dates
-        self._mbids = {} # Recording id to release id's
-        self._song_details = {} # Bunch of details about the music that we can use in the future
+    def __init__(self , fingerprint = None ,
+            duration = None,
+            mbid = None,
+            mbid_dates = None,
+            song_details = None,
+            backup_date= None,
+            song_title = None,
+            artist = None,
+            album = None,
+            date = None,
+            scores = None,
+            recording_ids = None,
+            mbids = None,
+            best_acoust_id = None,
+            best_score = None,
+            cover_art_url = None):
+
+        self._mbid = mbid # The MBID
+        self._mbid_dates = mbid_dates # mbid to release dates
+        self._mbids = mbids # Recording id to release id's
+        self._song_details = song_details # Bunch of details about the music that we can use in the future
         self._backup_date = {}
         self._fingerprint = fingerprint
         self.duration = duration
-        self.song_title =None
-        self.artist = None
-        self.album = None
-        self.date = None
+        self.song_title = song_title
+        self.artist = artist
+        self.album = album
+        self.date = date
         # We dont want this to have public access
-        self._scores = {}
-        self._recording_ids = {}
+        self._scores = scores
+        self._recording_ids = recording_ids
+        self._best_acoustid = best_acoust_id
+        self._best_score = best_score
+        self.cover_art_url = cover_art_url
 
     @classmethod
     def feedfingerprint(cls,fingerprint,duration):
@@ -92,7 +161,7 @@ class MusicUtils(object):
         if isinstance(val,dict) :
             self._mbid_dates = val
 
-    def extractdates(self,details):
+    def _extractdates(self,details):
         '''
         Extract all the dates.
         Basically populates the mbid_dates with the apporpriate data , i.e mbid => date
@@ -112,19 +181,19 @@ class MusicUtils(object):
                 self._backup_date[j['id']] = key
 
 
-    def latestmbid(self,details):
+    def _latestmbid(self,details):
         '''
         Gets the information about the latest track of the song and returns the song's mbid
         '''
-        self.extractdates(details)
+        self._extractdates(details)
         try:
-            self._mbid , self.date =  max(self._mbid_dates.iteritems(),key = operator.itemgetter(1))
+            mbid , date =  max(self._mbid_dates.iteritems(),key = operator.itemgetter(1))
         except:
-            self._mbid ,self.date =  (random.choice(self._backup_date.keys()),'2015')
-        return (self._mbid , self.date)
+            mbid ,date =  (random.choice(self._backup_date.keys()),'2015')
+        return (mbid , date)
 
 
-    def extract_album_name(self,coverart_mbid):
+    def _extract_album_name(self,coverart_mbid):
         ''' Get the album name  '''
         key = ''
         for i,j in self._mbids.iteritems():
@@ -133,16 +202,18 @@ class MusicUtils(object):
                     key = i
                     break
         try:
-            self.album =  self._song_details[key][0]['title'].encode('utf-8')
+            album =  self._song_details[key][0]['title'].encode('utf-8')
         except:
-            self.album = ''
-        return self.album
+            album = ''
+        return album
 
-
-    def recording_details(self,recording_ids):
+    @staticmethod
+    def recording_details(recording_ids):
         '''
         We need to store more information . As of now , storing only release id to get the album art in future
         '''
+        mbids = {}
+        song_details = {}
         for rid in recording_ids:
             release_ids = []
             try:
@@ -153,12 +224,12 @@ class MusicUtils(object):
                             release_ids.append(i['id'])
                     except:
                         pass
-                    self._mbids[rid] = release_ids
-                    self._song_details[rid] = data['release-list']
+                    mbids[rid] = release_ids
+                    song_details[rid] = data['release-list']
             except musicbrainzngs.WebServiceError as exc:
                 print("Something went wrong with the request: %s" % exc)
                 raise FingerPrinterException('Something wrong with the request. ',3)
-        return (self._mbids,self._song_details)
+        return (mbids,song_details)
 
 
     @staticmethod
@@ -166,7 +237,7 @@ class MusicUtils(object):
         '''
             Takes MBID as the argument and downloads the image for the music
         '''
-        cover_art_json = requests.get(MusicUtils.imageurl+art_mbid).text
+        cover_art_json = requests.get(MusicUtils.base_image_url+art_mbid).text
         try:
             response = json.loads(cover_art_json)
             pic = response['images'][0]['image']
@@ -196,77 +267,48 @@ class MusicUtils(object):
         else :
             raise MusicUtilsException('1','Image not found')
 
-    def bestacoustid(self):
-        return max(self._scores.iteritems(),key=operator.itemgetter(1))
+    @staticmethod
+    def bestacoustid(scores):
+        return max(scores.iteritems(),key=operator.itemgetter(1))
 
-
-    def parse_result(self):
-        '''
-        Makes a request to acoustid web service
-        Parses the response
-        Aggregates the necessary scores , recording ids , mbids , artist and song title
-        '''
-        acoustids = []
+    def lookup(self):
         json_file = acoustid.lookup(MusicUtils.API_KEY , self._fingerprint , self.duration)
-        temp_song  = {}
-        temp_artist = {}
-        print json_file
-        if json_file['status'] != u'ok' or len(json_file['results'])==0:
-            raise MusicUtilsException('2','Bad look up, ended with a bad status report')
-        for result in json_file['results']:
-            acoustids.append(result['id'])
-            self._scores[result['id']] = result['score']
-            if 'recordings' in result:
-                rids = [] # Recording Ids
-                for recording in result['recordings']:
-                    rids.append(recording['id'])
-            try:
-                if recording['title'] in temp_song:
-                    temp_song[recording['title']] += 1
-                else:
-                    temp_song[recording['title']] = 0
-            except:
-                pass
-            try:
-                name = ''
-                ok = False
-                for person in recording['artists']:
-                    if 'joinphrase' in person:
-                        name +=  person['name'] +person['joinphrase']
-                        ok = True
-                        continue
-
-               #adding the last artist
-                if ok:
-                    name = name + ' ' + person['name']
-                else:
-                    name = person['name']
-                if name in temp_artist :
-                    temp_artist[name] +=1
-                else:
-                    temp_artist[name] = 0
-            except:
-                pass
-            self.recording_ids[result['id']] = rids
+        self._scores , self._recording_ids , temp_song, temp_artist =  parse_result(json_file)
         self.song_title , self.artist =  max(temp_song.iteritems(), key = operator.itemgetter(1))[0].encode('utf-8') , max(temp_artist.iteritems(), key = operator.itemgetter(1))[0].encode('utf-8')
+        self._best_acoust ,self._best_score = self.bestacoustid(self._scores)
+        self._mbids,self._song_details = self.recording_details(self._recording_ids[self._best_acoust])
+        self._mbid ,self.date = self._latestmbid(self._song_details)
+        self.album = self._extract_album_name(self._mbid)
+        return MusicUtils(scores = self._scores,
+                recording_ids = self._recording_ids,
+                song_title = self.song_title,
+                artist = self.artist ,
+                best_acoust_id = self._best_acoustid,
+                best_score = self._best_score,
+                mbids = self._mbids,
+                song_details= self._song_details,
+                mbid= self._mbid,
+                date= self.date,
+                album=self.album,
+                backup_date = self._backup_date,
+                fingerprint = self._fingerprint,
+                duration = self.duration,
+                cover_art_url = MusicUtils.base_image_url + self._mbid
+                )
 
 if __name__ == '__main__':
     import sys
-    from tag import *
-    music = sys.argv[1]
-    finger = FingerPrinter(music)
-    query = MusicUtils.feedfingerprint(finger.fingerprint , finger.duration)
-    query.parse_result()
-    best_acoust , score = query.bestacoustid()
-    mbids , details = query.recording_details(query.recording_ids[best_acoust])
-    coverart_mbid , date = query.latestmbid(details)
-    album_name = query.extract_album_name(coverart_mbid)
+    from tag import trialtag
+    FILE = sys.argv[1]
+    finger = FingerPrinter(FILE)
+    music = MusicUtils.feedfingerprint(finger.fingerprint , finger.duration)
+    query = music.lookup()
     metadata = {}
     metadata['title'] = unicode(query.song_title)
     metadata['artist'] = unicode(query.artist)
     metadata['date'] = unicode(query.date)
-    metadata['album-art-mbid'] = unicode(coverart_mbid)
+    metadata['album-art-mbid'] = unicode(query.mbid)
     metadata['album'] = query.album
     metadata['duration'] = query.duration
-    trialtag(music,metadata)
+    trialtag(FILE,metadata)
     print ' Artist :{0} \n Album  :{1} \n Song   :{2} \n Date   :{3} \n Duration:{4} \n mbid   :{5}'.format(query.artist,query.album,query.song_title,query.date,query.duration,query.mbid)
