@@ -8,7 +8,8 @@ import requests
 import urllib
 import json
 from BeautifulSoup import BeautifulSoup
-from tag import *
+from tagutils import *
+
 
 
 class MusicUtilsException(Exception):
@@ -18,6 +19,55 @@ class MusicUtilsException(Exception):
 
     def __str__(self):
         return '[Error :{0}] => {1}'.format(self.code , self.msg)
+
+def parse_result(json_file):
+    '''
+    Parses the response
+    Aggregates the necessary scores , recording ids , mbids , artist and song title
+    '''
+    temp_song  = {}
+    temp_artist = {}
+    scores = {}
+    recording_ids = {}
+    if json_file['status'] != u'ok' or len(json_file['results'])==0:
+        raise MusicUtilsException('2','Bad look up, ended with a bad status report')
+    for result in json_file['results']:
+        scores[result['id']] = result['score']
+        if 'recordings' in result:
+            rids = [] # Recording Ids
+            for recording in result['recordings']:
+                rids.append(recording['id'])
+        try:
+            if recording['title'] in temp_song:
+                temp_song[recording['title']] += 1
+            else:
+                temp_song[recording['title']] = 0
+        except:
+            pass
+        try:
+            name = ''
+            ok = False
+            for person in recording['artists']:
+                if 'joinphrase' in person:
+                    name +=  person['name'] +person['joinphrase']
+                    ok = True
+                    continue
+
+           #adding the last artist
+            if ok:
+                name = name + ' ' + person['name']
+            else:
+                name = person['name']
+            if name in temp_artist :
+                temp_artist[name] +=1
+            else:
+                temp_artist[name] = 0
+        except:
+            pass
+        recording_ids[result['id']] = rids
+    return (scores , recording_ids , temp_song , temp_artist)
+
+
 
 class MusicUtils(object):
 
@@ -47,23 +97,23 @@ class MusicUtils(object):
             best_score = None,
             cover_art_url = None):
 
-        self._mbid = mbid # The MBID
-        self._mbid_dates = mbid_dates # mbid to release dates
-        self._mbids = mbids # Recording id to release id's
-        self._song_details = song_details # Bunch of details about the music that we can use in the future
-        self._backup_date = {}
-        self._fingerprint = fingerprint
+        self.mbid = mbid # The MBID
         self.duration = duration
         self.song_title = song_title
         self.artist = artist
         self.album = album
         self.date = date
+        self.cover_art_url = cover_art_url
         # We dont want this to have public access
         self._scores = scores
         self._recording_ids = recording_ids
         self._best_acoustid = best_acoust_id
         self._best_score = best_score
-        self.cover_art_url = cover_art_url
+        self._backup_date = {}
+        self._fingerprint = fingerprint
+        self._mbid_dates = mbid_dates # mbid to release dates
+        self._mbids = mbids # Recording id to release id's
+        self._song_details = song_details # Bunch of details about the music that we can use in the future
 
 
     @property
@@ -80,14 +130,6 @@ class MusicUtils(object):
 	Contains response about the song from musicbrainz
 	'''
         return self._song_details
-
-    @property
-    def mbid(self):
-	'''
-	The final decided MBID
-	'''
-        return self._mbid
-
 
     @property
     def recording_ids(self):
@@ -192,8 +234,8 @@ class MusicUtils(object):
         self.song_title , self.artist =  max(temp_song.iteritems(), key = operator.itemgetter(1))[0].encode('utf-8') , max(temp_artist.iteritems(), key = operator.itemgetter(1))[0].encode('utf-8')
         self._best_acoust ,self._best_score = self.bestacoustid(self._scores)
         self._mbids,self._song_details = self.recording_details(self._recording_ids[self._best_acoust])
-        self._mbid ,self.date = self._latestmbid(self._song_details)
-        self.album = self._extract_album_name(self._mbid)
+        self.mbid ,self.date = self._latestmbid(self._song_details)
+        self.album = self._extract_album_name(self.mbid)
         return MusicUtils(scores = self._scores,
                 recording_ids = self._recording_ids,
                 song_title = self.song_title,
@@ -202,18 +244,17 @@ class MusicUtils(object):
                 best_score = self._best_score,
                 mbids = self._mbids,
                 song_details= self._song_details,
-                mbid= self._mbid,
+                mbid= self.mbid,
                 date= self.date,
                 album=self.album,
                 backup_date = self._backup_date,
                 fingerprint = self._fingerprint,
                 duration = self.duration,
-                cover_art_url = MusicUtils.base_image_url + self._mbid
+                cover_art_url = MusicUtils.base_image_url + self.mbid
                 )
 
 if __name__ == '__main__':
     import sys
-    from tag import *
     FILE = sys.argv[1]
     finger = FingerPrinter(FILE)
     music = MusicUtils(finger.fingerprint , finger.duration)
