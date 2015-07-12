@@ -25,7 +25,8 @@ class MusicUtils(object):
     __version__ = '0.0.1'
     base_image_url = 'http://coverartarchive.org/release/'
     musicbrainz_image_url = 'https://musicbrainz.org/release/{0}/cover-art'
-    API_KEY = 'S0xa1BKE'
+    API_KEY = '' # Enter the acoustid api key
+
     musicbrainzngs.auth('','')  # username  , password
     musicbrainzngs.set_useragent('Auto Tagger', '0.1', 'nirvik1993@gmail.com')
 
@@ -63,10 +64,6 @@ class MusicUtils(object):
         self._best_acoustid = best_acoust_id
         self._best_score = best_score
         self.cover_art_url = cover_art_url
-
-    @classmethod
-    def feedfingerprint(cls,fingerprint,duration):
-        return cls(fingerprint , duration)
 
 
     @property
@@ -219,7 +216,7 @@ if __name__ == '__main__':
     from tag import *
     FILE = sys.argv[1]
     finger = FingerPrinter(FILE)
-    music = MusicUtils.feedfingerprint(finger.fingerprint , finger.duration)
+    music = MusicUtils(finger.fingerprint , finger.duration)
     query = music.lookup()
     metadata = {}
     metadata['title'] = unicode(query.song_title)
