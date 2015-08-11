@@ -1,7 +1,6 @@
 import subprocess
 import sys
 
-
 class FingerPrinterException(Exception):
 
     def __init__(self, mesg, error_code):
