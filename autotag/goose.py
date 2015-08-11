@@ -29,7 +29,7 @@ def goose((FILE)):
             tag(FILE,metadata)
             print 'Goose tagged => {0} , Artist:{1} , Album :{2}'.format(query.song_title,query.artist,query.album)
         except Exception as e:
-            print 'Goose flummoxed  => {0} '.format(FILE)
+            print 'Goose couldnt tag  => {0} '.format(FILE)
             print 'Reason => {0}'.format(e)
 
 def main():
